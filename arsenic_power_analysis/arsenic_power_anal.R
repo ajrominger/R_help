@@ -17,7 +17,7 @@ make.mm <- function(nfern, nplot) {
     treat <- do.call(rbind, replicate(2*nplot/8, treat, simplify=FALSE))
     
     ## recall column 1 is the intercept (i.e. all 1's); also x will be randomly 
-    ## generated in `sim.lm', so here we just make a placeholder for it (=1)
+    ## generated in `sim.lm', so here we just make a place-holder for it (=1)
     return(cbind(rep(1, n),        # the intercept
                  rep(0:1, each=n/2), # time 1 or time 2
                  treat,            # dummy matrix of indicators
@@ -73,6 +73,9 @@ sim.lm <- function(mm, a.t, a.trt, a.As, a.As.trt, beta.sd, epsilon.sd, nfern, n
 
 ## function to run the simulation for 1 set of parameters
 run.1sim <- function(nsim, a.t, a.trt, a.As, a.As.trt, beta.sd, epsilon.sd, nfern, nplot) {
+    ## make the model matrix.  note, we only need to do this once (i.e. it doesn't change
+    ## across simulations) that's why we made a sepparate function for it so that we don't 
+    ## waste time in the simulation re-making the same model matrix
     mm <- make.mm(nfern, nplot)
     
     ## use replicate to return many simulations for these parameters
