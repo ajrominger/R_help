@@ -11,9 +11,9 @@ make.mm <- function(nfern, nplot) {
     n <- 2*nfern*nplot
     
     ## matrix of dummy variables indicating treatment group
-    treat <- matrix(0, nrow=nfern*8, ncol=7)
-    for(i in 1:7) treat[(i)*nfern + 1:nfern, i] <- 1
-    treat <- do.call(rbind, replicate(2*nplot/8, treat, simplify=FALSE))
+    treat <- matrix(0, nrow=nfern*6, ncol=5)
+    for(i in 1:5) treat[(i)*nfern + 1:nfern, i] <- 1
+    treat <- do.call(rbind, replicate(2*nplot/6, treat, simplify=FALSE))
     
     ## recall column 1 is the intercept (i.e. all 1's); also x will be randomly 
     ## generated in `sim.lm', so here we just make a place-holder for it (=1)
@@ -48,7 +48,7 @@ sim.lm <- function(mm, a.t, a.trt, a.As, a.As.trt, beta.sd, epsilon.sd, nfern, n
     
     ## fill in x place-holders in model matrix with simulated x values
     x <- rnorm(n)
-    mm[, 10:17] <- mm[, 10:17] * x
+    mm[, 8:13] <- mm[, 8:13] * x
     
     ## plot random effect (note each plot is sampled twice--two time points)
     plt <- rep(rep(rnorm(nplot, sd=beta.sd), each=nfern), 2)
@@ -61,7 +61,7 @@ sim.lm <- function(mm, a.t, a.trt, a.As, a.As.trt, beta.sd, epsilon.sd, nfern, n
     
     ## time step, treat and plot number for use in lmer
     time.step <- as.factor(mm[, 2] + 1)
-    treat <- as.factor(mm[, 3:9] %*% 1:7 + 1)
+    treat <- as.factor(mm[, 3:7] %*% 1:5 + 1)
     pltID <- as.factor(rep(rep(1:nplot, each=nfern), 2))
     
     ## fit models
@@ -89,10 +89,10 @@ run.1sim <- function(nsim, a.t, a.trt, a.As, a.As.trt, beta.sd, epsilon.sd, nfer
 
 ## example use (goal is to put this in a function that will iterate through all parameter combinations)
 ## here's the case where there is *no* treatment effect (95% of pvals should be > 0.05 if nsim is large)
-run.1sim(nsim=10, a.t=1, a.trt=rep(0, 7), a.As=0.5, a.As.trt=rep(0, 7), beta.sd=0.5, epsilon.sd=0.1, nfern=3, nplot=16*3)
+run.1sim(nsim=10, a.t=1, a.trt=rep(0, 5), a.As=0.5, a.As.trt=rep(0, 5), beta.sd=0.5, epsilon.sd=0.1, nfern=3, nplot=16*3)
 
 ## here's the case where there *is* a treatment effect (most pvals should be <= 0.05 if nsim is large)
-run.1sim(nsim=10, a.t=1, a.trt=1:7, a.As=0.5, a.As.trt=1:7, beta.sd=0.5, epsilon.sd=0.1, nfern=3, nplot=16*3)
+run.1sim(nsim=10, a.t=1, a.trt=1:5, a.As=0.5, a.As.trt=1:5, beta.sd=0.5, epsilon.sd=0.1, nfern=3, nplot=16*3)
 
 
 ## NEXT STEPS:
