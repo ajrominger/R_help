@@ -1,6 +1,9 @@
 ## package needed for mixed effects
 library(lme4)
 
+## package for pretty plotting
+library(RColorBrewer)
+
 ## function that makes the model matrix for a specific set of conditions (i.e.
 ## for a specific set of coefficient values and numbers of ferns and plots)
 ## function arguments are:
@@ -117,36 +120,24 @@ run.1sim(nsim=10, a.t=1, a.trt=1:5, a.As=0.5, a.As.trt=1:5, beta.sd=0.5, epsilon
 ## generated all unique combinations.  you'll need to add the rest of the parameters (a.As, a.As.trt, etc.)
 
 ##adding rest of parameters, these are realistic values:
-#param <- expand.grid(nfern=c(39, 24, 9), nplot <- 0, a.t=1:3, a.trt=seq(0, 30, length=7), a.As=seq(0, 30, length=7), a.As.trt=seq(0, 30, length=7), beta.sd=1:3, epsilon.sd=1:3)
-
-#param with small values to troubleshoot size
-#param <- expand.grid(nfern=c(39, 24, 9), nplot <- 0, a.t=1:3, a.trt=seq(0, 1, length=2), a.As=seq(0, 1, length=2), a.As.trt=seq(0, 1, length=2), beta.sd=1:3, epsilon.sd=1:3)
-
-#param without nplot - see troubleshooting comments below:
-param <- expand.grid(nfern=c(39, 24, 9), a.t=1:3, a.trt=seq(0, 1, length=2), a.As=seq(0, 1, length=2), a.As.trt=seq(0, 1, length=2), beta.sd=1:3, epsilon.sd=1:3)
-
-#Questions for Part 1: 
-#nfern seems like # replicates, not number of ferns per plot?
-#we also need nfernperplot, and nfern_samplepool (i.e., taking out edge effect)?
-#should be 5 values for trt- associated params, not 7?
-
-##Part 2:
-## now we need to calculate number of plots based on nfern (because one determines the other)
-## i can't remember what we figured out for that, but suppose that the total number of ferns is 
-## limited to 300, then we could do this
-
-#param$nplot <- 300 / param$nfern
-#param$nplot
-
-## the real calculation will be more complicated (edge effects and all that, but i'll leave it to you)
-
-
-##A simple version, just assigning number of total plots corresponding to the number of ferns that could be sampled, after taking out edge effect
-
-
+param <- expand.grid(nfern=c(39, 24, 9), nplot = 0, a.t=1:3, a.trt=seq(0, 30, length=7), 
+                     a.As=seq(0, 30, length=7), a.As.trt=seq(0, 30, length=7), 
+                     beta.sd=1:3, epsilon.sd=1:3)
 param$nplot[param$nfern == 39] <- 12
 param$nplot[param$nfern == 24] <- 18
 param$nplot[param$nfern == 9] <- 36
+
+#param with small values to troubleshoot size
+#param <- expand.grid(nfern=c(39, 24, 9), nplot = 0, a.t=1:3, a.trt=seq(0, 1, length=2), a.As=seq(0, 1, length=2), a.As.trt=seq(0, 1, length=2), beta.sd=1:3, epsilon.sd=1:3)
+
+#param without nplot - see troubleshooting comments below:
+# param <- expand.grid(nfern=c(39, 24, 9), a.t=1:2, a.trt=seq(0, 1, length=3), 
+#                      a.As=0:1, a.As.trt=0:1, 
+#                      beta.sd=1:2, epsilon.sd=1:2)
+
+## a.As.trt (the interaction) must be no greater than the main effect (a.trt)
+param <- param[param$a.As.trt <= param$a.trt, ]
+
 
 ##Questions for Part 2: When are we incorporating number of ferns to be sampled, vs. number of replicates? nplot does not depend on nfern to be sampled, but our ability to detect within plot variation does depend on nfern to be sampled?
 
@@ -159,7 +150,7 @@ run.pwrAnal <- function(nsim) {
     ## everything in this function needs to be done for each row of param, so right away we need to enter
     ## some kind of for loop kind of construct.  for loops are slow in R so we'll use one of the apply 
     ## functions (see below for details)
-    sapply(1:nrow(param), function(i) {
+    out <- mclapply(1:nrow(param), mc.cores = 6, FUN = function(i) {
         ## right now there is just a simple function (sum) that we're applying to each row of param
         this.row <- param[i, ]
         #sum(this.row)
@@ -184,65 +175,19 @@ run.pwrAnal <- function(nsim) {
         run.1sim(nsim=nsim, nfern=this.row$nfern, nplot=this.row$nplot, a.t=this.row$a.t, a.trt=this.a.trt, a.As=this.row$a.As, a.As.trt=this.a.As.trt, beta.sd=this.row$beta.sd, epsilon.sd=this.row$epsilon.sd)
       #browser()
     })
+    unlist(out)
 }
-out <- run.pwrAnal(nsim=1)
-out
+out <- run.pwrAnal(nsim=100)
+
 
 pwr <- aggregate(list(pwr=out), list(nplot=param$nplot, a.trt=param$a.trt), mean)
 
-plot(pwr$a.trt, pwr$pwr, col=as.factor(pwr$nplot))
-
-#debugging:
-#when I ask for param while running the function with browser after run.1sim, I get the following columns: 
-    nfern Var2 a.t a.trt a.As a.As.trt beta.sd epsilon.sd nplot
-1      39    0   1     0    0        0       1          1    12
-2      24    0   1     0    0        0       1          1    18
-3       9    0   1     0    0        0       1          1    36
-4      39    0   2     0    0        0       1          1    12
-5      24    0   2     0    0        0       1          1    18
-
-## What is Var2? seems like Var2 is the column that nplot is supposed to be mapped to, but it is called Var2, and instead nplot is tacked on the end. 
-## try getting rid of nplot in param - see trial version of param above
-## result: i got a number at the end, but still the warning message, when running in browser()" 
-
-#25: (function (x) 
-#{
-#    names(x) <- nn
-#    fn(x, ...)
-#})(0.437676319975442)
-
-#Selection: out
-#Enter an item from the menu, or 0 to exit
-#Selection: 0
-#Warning message:
-#In optwrap(optimizer, devfun, getStart(start, rho$lower, rho$pp),  :
-#  convergence code 3 from bobyqa: bobyqa -- a trust region step failed to reduce q
-#Browse[3]> 
-
-###next steps? 
-
-#########
-
-## if everything worked right the output of run.pwrAnal should be a vector of equal length to param
-## then you can plot that vector against the parameter values in param
-
-## here's a little more info on sapply, basically just using what we started out with in the function
-## so you can get an idea of how it works
-
-sapply(1:nrow(param), function(i) {
-    print(i)
-})
-
-## sapply iterates through the vector 1:nrow(param) and does something (specified by the function) 
-## to each element in the vector. in the example above it just prints each element
-## in the example below we'll extract each row of param and sum their contents
-
-sapply(1:nrow(param), function(i) {
-    this.row <- param[i, ]
-    sum(this.row)
-})
-
-## compare the first few values from the above command with "doing it by hand":
-sum(param[1, ])
-sum(param[2, ])
-sum(param[3, ])
+pdf('~/Dropbox/Research/R_help/arsenic_power_analysis/fig_powerAnal.pdf', width = 5, height = 5)
+palette(hsv(c(0.5, 0, 0.1), c(1, 0, 1), c(1, 0, 1)))
+par(mar = c(4, 4, 0, 0) + 0.5)
+plot(pwr$a.trt, pwr$pwr, col=as.factor(pwr$nplot), 
+     xlab = 'As treatment effect size', ylab = 'Power', pch = 16, cex = 1.5,
+     cex.lab = 1.5)
+legend('topleft', legend = paste('nplot', levels(as.factor(pwr$nplot)), sep = ' =  '), 
+       col = as.factor(levels(as.factor(pwr$nplot))), pch = 16, bty = 'n', cex = 1.5)
+dev.off()
