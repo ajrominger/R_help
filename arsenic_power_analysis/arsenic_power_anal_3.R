@@ -4,6 +4,9 @@ library(lme4)
 ## package for pretty plotting
 library(RColorBrewer)
 
+## parallel computin
+library(parallel)
+
 ## function that makes the model matrix for a specific set of conditions (i.e.
 ## for a specific set of coefficient values and numbers of ferns and plots)
 ## function arguments are:
