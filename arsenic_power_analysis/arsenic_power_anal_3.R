@@ -123,8 +123,8 @@ run.1sim(nsim=10, a.t=1, a.trt=1:5, a.As=0.5, a.As.trt=1:5, beta.sd=0.5, epsilon
 ## generated all unique combinations.  you'll need to add the rest of the parameters (a.As, a.As.trt, etc.)
 
 ##adding rest of parameters, these are realistic values:
-param <- expand.grid(nfern=c(39, 24, 9), nplot = 0, a.t=1:3, a.trt=seq(0, 30, length=7), 
-                     a.As=seq(0, 30, length=7), a.As.trt=seq(0, 30, length=7), 
+param <- expand.grid(nfern=c(39, 24, 9), nplot = 0, a.t=0:2, a.trt=seq(0, 5, length=7), 
+                     a.As=seq(0, 5, length=7), a.As.trt=seq(0, 5, length=7), 
                      beta.sd=1:3, epsilon.sd=1:3)
 param$nplot[param$nfern == 39] <- 12
 param$nplot[param$nfern == 24] <- 18
@@ -153,8 +153,9 @@ run.pwrAnal <- function(nsim) {
     ## everything in this function needs to be done for each row of param, so right away we need to enter
     ## some kind of for loop kind of construct.  for loops are slow in R so we'll use one of the apply 
     ## functions (see below for details)
-    out <- mclapply(1:nrow(param), mc.cores = 6, FUN = function(i) {
+    out <- mclapply(1:nrow(param), mc.cores = 14, FUN = function(i) {
         ## right now there is just a simple function (sum) that we're applying to each row of param
+        print(i)
         this.row <- param[i, ]
         #sum(this.row)
         
@@ -163,7 +164,6 @@ run.pwrAnal <- function(nsim) {
         ##    the a.trt and a.As.trt elements of this.row (you can access them with the $, like this:
         ##    this.row$a.trt) 
         
-        ## Question: why do we need to make these vectors here, when we already have values for a.trt and a.As.trt in param? Answer: because we have 1 number, a difference in the value, and we want to expand that difference into 5 values. Remember, a.As is only a scaler and does not need to be expanded. 
         
         this.a.trt <- seq(from=this.row$a.trt, by=this.row$a.trt, length=5)
         this.a.As.trt <- seq(from=this.row$a.As.trt, by=this.row$a.As.trt, length=5)
@@ -171,17 +171,15 @@ run.pwrAnal <- function(nsim) {
         ## 2: using the 5 long vectors you made in step 1 and the other elements of this.row, plug
         ##    those into run.1sim, that's it, you're done!
         
-        ## indexing the arguments in the fucntion run.1sim to the values in this.row of param vector
-        ## param <- expand.grid(a.t=1:3, a.trt=1:5, nfern=c(2, 3, 6), a.As=1:7, a.As.trt=5, beta.sd=1:3, epsilon.sd=1:3)
-
-        
-        run.1sim(nsim=nsim, nfern=this.row$nfern, nplot=this.row$nplot, a.t=this.row$a.t, a.trt=this.a.trt, a.As=this.row$a.As, a.As.trt=this.a.As.trt, beta.sd=this.row$beta.sd, epsilon.sd=this.row$epsilon.sd)
-      #browser()
+        run.1sim(nsim=nsim, nfern=this.row$nfern, nplot=this.row$nplot, a.t=this.row$a.t, 
+                 a.trt=this.a.trt, a.As=this.row$a.As, a.As.trt=this.a.As.trt, 
+                 beta.sd=this.row$beta.sd, epsilon.sd=this.row$epsilon.sd)
     })
     unlist(out)
 }
-out <- run.pwrAnal(nsim=100)
 
+
+out <- run.pwrAnal(nsim=100)
 
 pwr <- aggregate(list(pwr=out), list(nplot=param$nplot, a.trt=param$a.trt), mean)
 
@@ -191,6 +189,6 @@ par(mar = c(4, 4, 0, 0) + 0.5)
 plot(pwr$a.trt, pwr$pwr, col=as.factor(pwr$nplot), 
      xlab = 'As treatment effect size', ylab = 'Power', pch = 16, cex = 1.5,
      cex.lab = 1.5)
-legend('topleft', legend = paste('nplot', levels(as.factor(pwr$nplot)), sep = ' =  '), 
+legend('bottomright', legend = paste('nplot', levels(as.factor(pwr$nplot)), sep = ' =  '), 
        col = as.factor(levels(as.factor(pwr$nplot))), pch = 16, bty = 'n', cex = 1.5)
 dev.off()
