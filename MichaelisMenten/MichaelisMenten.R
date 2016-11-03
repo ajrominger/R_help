@@ -31,13 +31,13 @@ mmsol <- function(v, S) {
     names(initPar) <- c('Vmax', 'Km')
     
     ## minimize the sum of squares funciton
-    sol <- optim(initPar, ss)
+    sol <- optim(initPar, ss, method = 'L-BFGS-B', lower = 0)
     
     ## check optimization convereged
-    if(sol$convergence > 0 | sol$par[1] < 0 | abs(sol$par[1]) > 10*max(v)) {
+    if(sol$convergence > 0) {
         ## if it didn't, return Hanes–Woolf estimate
-        warning('cannot fit Michaelis–Menten curve, using Hanes–Woolf linearization')
-        return(initPar)
+        warning('cannot fit Michaelis–Menten curve')
+        return(c(NA, NA))
     } else {
         ## if it did, return the optimized estimates
         return(sol$par)
@@ -57,8 +57,20 @@ mmboot <- function(v, S, n = 1000) {
         return(mmsol(newv, newS))
     })
     
-    out <- t(apply(boot, 1, function(x) c(mean(x), quantile(x, prob = c(0.025, 0.975)))))
+    ## estimate from non-bootstrapped data
+    est <- mmsol(v, S)
+    
+    ## remove spuriously large outliers
+    boot <- boot[, boot[1, ] <= est + est - min(boot[1, ], na.rm = TRUE)]
+    
+    plot(density(boot[1, ], na.rm = TRUE))
+    
+    out <- t(apply(boot, 1, function(x) c(median(x, na.rm = TRUE), 
+                                          quantile(x, prob = c(0.025, 0.975), na.rm = TRUE))))
     colnames(out) <- c('est', 'ci_2.5', 'ci_97.5')
+    
+    ## make est the real estimate
+    out[, 1] <- est
     
     return(out)
 }
