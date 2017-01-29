@@ -29,12 +29,12 @@ formatSLAC <- function(f) {
 
 
 ## example usage
-toFormat <- c('~/Dropbox/Research/R_help/xas/1BE1_1_011_A.001', 
-              '~/Dropbox/Research/R_help/xas/ferrStd_trial_062_A.001',
-              '~/Dropbox/Research/R_help/xas/tub_Fe_066_A.002')
-formatSLAC(toFormat)
-
+# toFormat <- c('~/Dropbox/Research/R_help/xas/1BE1_1_011_A.001', 
+#               '~/Dropbox/Research/R_help/xas/ferrStd_trial_062_A.001',
+#               '~/Dropbox/Research/R_help/xas/tub_Fe_066_A.002')
+# formatSLAC(toFormat)
+# 
 ## taking advantage of `setwd' can make the code look more tidy, but does the same thing:
-setwd('~/Dropbox/Research/R_help/xas')
-toFormat <- c('1BE1_1_011_A.001', 'ferrStd_trial_062_A.001','tub_Fe_066_A.002')
-formatSLAC(toFormat)
+# setwd('~/Dropbox/Research/R_help/xas')
+# toFormat <- c('1BE1_1_011_A.001', 'ferrStd_trial_062_A.001','tub_Fe_066_A.002')
+# formatSLAC(toFormat)
