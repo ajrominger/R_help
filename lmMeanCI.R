@@ -1,66 +1,39 @@
-library(multcompView)
+## funciton to calculate ANOVA stats for case where summary of data are given
+## in the form of a mean and CI of MPN (= most probable number) for each treatment
 
-lmMeanCI <- function(mpn, mpnLo, mpnHi, beforeAfter, x, nrep) {
-    beforeAfter <- factor(as.character(beforeAfter), 
-                          levels = rev(sort(unique(as.character(beforeAfter)))))
+lmMeanCI <- function(formula, data, mpnLo, mpnHi, nrep, runTukey = FALSE) {
+    ## make model
+    mod <- lm(formula, data = data, qr = FALSE)
     
+    ## extract mpn
+    mpn <- mod$model[, 1]
+    
+    ## calculate sd from CI
     ci <- cbind(mpn - mpnLo, mpnHi - mpn)
     sd <- sapply(1:nrow(ci), function(i) mean(ci[i, ], na.rm = TRUE) / 1.96)
     
+    ## true number of data poins
     trueN <- nrep * length(mpn)
     
-    mod <- lm(mpn ~ beforeAfter * x)
-    yhat <- predict(mod)
-    
-    ssMod <- trueN * mean((yhat - mean(mpn))^2)
-    ssBA <- trueN * mean((predict(lm(mpn ~ beforeAfter)) - mean(mpn))^2)
-    ssX <- trueN * mean((predict(lm(mpn ~ x)) - mean(mpn))^2)
-    ssBAX <- ssMod - ssBA - ssX
-    
-    ssResid <- sum(((mpn - yhat)^2 + sd^2)*nrep)
-    msResid <- ssResid / (trueN - 4)
-    
-    fstat <- c(ssBA, ssX, ssBAX, NA) / msResid
-    aovTab <- matrix(c(c(1, 1, 1, trueN - 4),
-                       c(ssBA, ssX, ssBAX, ssResid), 
-                       fstat, 
-                       pf(fstat, 1, trueN - 4, lower.tail = FALSE)), 
-                     ncol = 4)
-    
-    colnames(aovTab) <- c('df', 'Sum Sq', 'F value', 'Pr(>F)')
-    rownames(aovTab) <- c('before_after', 'x', 'before_after:x', 'residuals')
-    
-    sumTab <- summary(mod)$coefficients[, 1, drop = FALSE]
-    
-    return(list(aovTab, sumTab))
-}
-
-
-lmMeanCIFull <- function(mpn, mpnLo, mpnHi, beforeAfter, site, depth, nrep) {
-    beforeAfter <- factor(as.character(beforeAfter), 
-                          levels = rev(sort(unique(as.character(beforeAfter)))))
-    
-    
-    ci <- cbind(mpn - mpnLo, mpnHi - mpn)
-    sd <- sapply(1:nrow(ci), function(i) mean(ci[i, ], na.rm = TRUE) / 1.96)
-    
-    trueN <- nrep * length(mpn)
-    
-    mod <- lm(mpn ~ beforeAfter * site * depth)
+    ## anova and prediction of model
     modAOV <- anova(mod)
     yhat <- predict(mod)
     
-    
+    ## adjusted model sum of squares
     ssq <- trueN * (modAOV[['Sum Sq']] / length(mpn))
     
+    ## adjusted residual sum of squares
     ssResid <- sum(((mpn - yhat)^2 + sd^2)*nrep)
     msResid <- ssResid / (trueN - 5)
     ssq[length(ssq)] <- ssResid
     
+    ## calculate f-statistic
     fstat <- ssq / modAOV$Df / msResid
     fstat[length(fstat)] <- NA
     
+    ## calculate degrees of freedom
     df <- modAOV$Df
+    df[length(df)] <- trueN - (sum(df[-length(df)]) + 1)
     
     aovTab <- matrix(c(df,
                        ssq, 
@@ -73,18 +46,23 @@ lmMeanCIFull <- function(mpn, mpnLo, mpnHi, beforeAfter, site, depth, nrep) {
     
     sumTab <- summary(mod)$coefficients[, 1, drop = FALSE]
     
+    out <- list(aovTab, sumTab)
     
     ## tukey
-    newBA <- rep(beforeAfter, nrep)
-    newSite <- rep(site, nrep)
-    newDepth <- rep(depth, nrep)
-    thsdOut <- replicate(100, {
-        y <- rnorm(trueN, rep(mpn, nrep), rep(sd, nrep))
-        thsd <- TukeyHSD(aov(lm(y ~ newBA * newSite * newDepth)))
-        thsd[['newBA:newSite:newDepth']][, 4]
-    })
+    if(runTukey) {
+        newBA <- rep(beforeAfter, nrep)
+        newSite <- rep(site, nrep)
+        newDepth <- rep(depth, nrep)
+        mod$model <- mod$model[rep(1:length(mpn), nrep), ]
+        thsdOut <- replicate(100, {
+            mod$model[, 1] <- rnorm(trueN, rep(mpn, nrep), rep(sd, nrep))
+            thsd <- TukeyHSD(aov(mod))
+            thsd[['newBA:newSite:newDepth']][, 4]
+        })
+        
+        tukeyLetters <- multcompView::multcompLetters(rowMeans(thsdOut))$Letters
+        out <- c(out, tukeyLetters)
+    }
     
-    tukeyLetters <- multcompLetters(rowMeans(thsdOut))$Letters
-    
-    return(list(aovTab, sumTab, tukeyLetters))
+    return(out)
 }
