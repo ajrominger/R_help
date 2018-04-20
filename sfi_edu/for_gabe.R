@@ -5,9 +5,17 @@ library(maps)
 ## load data
 dat <- read.csv('sfi_edu/users-2018_04_16.csv', as.is = TRUE)
 
+## extract year from date
 dat$year <- as.integer(substr(dat$Registered.on, 1, 4))
 
+## count up students enrolled in each year
+studentByYear <- ddply(dat, 'year', function(x) data.frame(num_students = length(unique(x$Name))))
 
+## plot it
+pdf('sfi_edu/fig_studentsByYear.pdf', width = 4, height = 4)
+par(mar = c(3, 3, 0, 0) + 0.5, mgp = c(2, 0.5, 0), cex.lab = 1.2)
+plot(studentByYear, xlab = 'Year', ylab = 'Students enrolled')
+dev.off()
 
 
 ## clean up countries
