@@ -132,3 +132,36 @@ axis(2, at = 1:ncol(foo), labels = colnames(foo), las = 1)
 axis(3, las = 3)
 dev.off()
 
+
+## how did they learn about it
+dat$Where.did.you.hear.about.Complexity.Explorer. <- as.factor(dat$Where.did.you.hear.about.Complexity.Explorer.)
+whereLearn <- ddply(dat, 'countryName', function(x) {
+    browser()
+    rbind(tapply(x$Name, x$Where.did.you.hear.about.Complexity.Explorer., function(X) length(unique(X)), default = 0))
+})
+
+
+
+dat$whereLearn <- tolower(dat$Where.did.you.hear.about.Complexity.Explorer.)
+dat$whereLearn[grep('googl|internet|search', dat$whereLearn)] <- 'web search'
+dat$whereLearn[grep('^web$', dat$whereLearn)] <- 'web search'
+dat$whereLearn[grep('class-central|class central|classcentral|course central', dat$whereLearn)] <- 'class-central.com'
+dat$whereLearn[grep('friend', dat$whereLearn)] <- 'friend or colleague'
+dat$whereLearn[grep('mooc', dat$whereLearn)] <- 'mooc-list.com'
+dat$whereLearn[grep('economist', dat$whereLearn)] <- 'the economist'
+dat$whereLearn[grep('teacher|professor|lecturer', dat$whereLearn)] <- 'teacher or professor'
+dat$whereLearn[grep('^class$', dat$whereLearn)] <- 'teacher or professor'
+dat$whereLearn[grep('learning how to learn', dat$whereLearn)] <- 'learning how to learn newsletter'
+dat$whereLearn[grep('^book', dat$whereLearn)] <- 'book'
+dat$whereLearn[grep('youtube', dat$whereLearn)] <- 'youtube'
+dat$whereLearn[grep('zhihu', dat$whereLearn)] <- 'zhihu.com'
+dat$whereLearn[grep('netlogo', dat$whereLearn)] <- 'netlogo website'
+dat$whereLearn[grep('melanie mitchell', dat$whereLearn)] <- 'melanie mitchell'
+dat$whereLearn[grep('newscientist', dat$whereLearn)] <- 'new scientist'
+dat$whereLearn[grep('radiolab', dat$whereLearn)] <- 'radiolab'
+dat$whereLearn[grep('amazon', dat$whereLearn)] <- 'amazon'
+
+
+
+foo <- table(dat$whereLearn)
+names(sort(foo, TRUE))[1:100]
