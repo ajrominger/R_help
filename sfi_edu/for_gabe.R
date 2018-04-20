@@ -1,6 +1,7 @@
 library(plyr)
 library(countrycode)
 library(maps)
+library(viridis)
 
 ## load data
 dat <- read.csv('sfi_edu/users-2018_04_16.csv', as.is = TRUE)
@@ -98,3 +99,36 @@ mtext('Students enrolled', side = 1, outer = TRUE, line = 3)
 dev.off()
 
 write.csv(studentsByCountry, file = 'sfi_edu/studentsByCountry.csv', row.names = FALSE)
+
+
+## students by country and year
+
+studentsByYearCountry <- ddply(dat, 'countryName', function(x) {
+    x$year <- factor(as.character(x$year), levels = sort(unique(dat$year)))
+    return(rbind(tapply(x$Name, x$year, function(X) length(unique(X)), default = 0)))
+})
+
+studentsByYearCountry$countryName[is.na(studentsByYearCountry$countryName)] <- 'blank'
+
+write.csv(studentsByYearCountry, file = 'sfi_edu/studentsByYearCountry.csv', row.names = FALSE)
+
+row.names(studentsByYearCountry) <- studentsByYearCountry$countryName
+studentsByYearCountry <- as.matrix(studentsByYearCountry[, -1])
+studentsByYearCountry <- studentsByYearCountry[studentsByCountry$countryName, ]
+
+foo <- t(studentsByYearCountry[studentsByCountry$num_students >= 50 & 
+                                   studentsByCountry$countryName != 'blank', ])
+foo <- log(foo)
+foo[!is.finite(foo)] <- NA
+
+pdf('sfi_edu/fig_studentsByYearCountry.pdf', width = 5, height = 20)
+par(mar = c(2, 10, 3, 1), cex.axis = 0.9)
+image(x = sort(unique(dat$year)), y = 1:ncol(foo), z = foo, col = rev(viridis(50)), 
+      axes = FALSE, frame.plot = TRUE, xlab = '', ylab = '')
+text(expand.grid(as.integer(rownames(foo)), 1:ncol(foo)), 
+     labels = ifelse(is.na(as.vector(foo)), 0, exp(as.vector(foo))), 
+     col = ifelse(is.na(as.vector(foo)), 'black', 'white'))
+axis(2, at = 1:ncol(foo), labels = colnames(foo), las = 1)
+axis(3, las = 3)
+dev.off()
+
