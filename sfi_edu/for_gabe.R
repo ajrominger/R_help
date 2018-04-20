@@ -17,6 +17,7 @@ par(mar = c(3, 3, 0, 0) + 0.5, mgp = c(2, 0.5, 0), cex.lab = 1.2)
 plot(studentByYear, xlab = 'Year', ylab = 'Students enrolled')
 dev.off()
 
+write.csv(studentByYear, file = 'sfi_edu/studentsByYear.csv', row.names = FALSE)
 
 ## clean up countries
 try1 <- countrycode(dat$Country, 'country.name', 'country.name')
@@ -95,3 +96,5 @@ box()
 
 mtext('Students enrolled', side = 1, outer = TRUE, line = 3)
 dev.off()
+
+write.csv(studentsByCountry, file = 'sfi_edu/studentsByCountry.csv', row.names = FALSE)
