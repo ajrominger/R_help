@@ -75,6 +75,7 @@ dat$countryName[is.na(dat$countryName)] <- countryByWorld[is.na(dat$countryName)
 
 studentsByCountry <- ddply(dat, 'countryName', function(x) data.frame(num_students = length(unique(x$Name))))
 studentsByCountry <- studentsByCountry[order(studentsByCountry$num_students), ]
+studentsByCountry$countryName[is.na(studentsByCountry$countryName)] <- 'blank'
 
 pdf('sfi_edu/fig_studentsByCountry.pdf', width = 12, height = 16)
 par(mar = c(0, 10, 0, 1) + 0.1, oma = c(4, 0, 0, 0), mfrow = c(1, 2))
