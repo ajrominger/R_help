@@ -134,34 +134,87 @@ dev.off()
 
 
 ## how did they learn about it
-dat$Where.did.you.hear.about.Complexity.Explorer. <- as.factor(dat$Where.did.you.hear.about.Complexity.Explorer.)
-whereLearn <- ddply(dat, 'countryName', function(x) {
-    browser()
-    rbind(tapply(x$Name, x$Where.did.you.hear.about.Complexity.Explorer., function(X) length(unique(X)), default = 0))
-})
-
 
 
 dat$whereLearn <- tolower(dat$Where.did.you.hear.about.Complexity.Explorer.)
-dat$whereLearn[grep('googl|internet|search', dat$whereLearn)] <- 'web search'
-dat$whereLearn[grep('^web$', dat$whereLearn)] <- 'web search'
+
+dat$whereLearn <- gsub('^a |^my |^an |^on a |^in a', '', dat$whereLearn)
+dat$whereLearn <- trimws(dat$whereLearn, which = 'both')
+dat$whereLearn[grep('googl|internet|search|online|browsing|surfing|stummble|stumble|study of |self study|studying|self-interest|on a site|looking|looked|link|just found it', dat$whereLearn)] <- 'web search'
+dat$whereLearn[grep('^web$|^net$', dat$whereLearn)] <- 'web search'
+dat$whereLearn[grep('^website$', dat$whereLearn)] <- 'web search'
 dat$whereLearn[grep('class-central|class central|classcentral|course central', dat$whereLearn)] <- 'class-central.com'
-dat$whereLearn[grep('friend', dat$whereLearn)] <- 'friend or colleague'
+dat$whereLearn[grep('friend|collegue|supervisor|colleague|someone|people|peer', dat$whereLearn)] <- 'friend or colleague'
 dat$whereLearn[grep('mooc', dat$whereLearn)] <- 'mooc-list.com'
 dat$whereLearn[grep('economist', dat$whereLearn)] <- 'the economist'
-dat$whereLearn[grep('teacher|professor|lecturer', dat$whereLearn)] <- 'teacher or professor'
+dat$whereLearn[grep('teacher|professor|lecturer|classroom|university|instructor|college|advisor|staff|tutor|lecture|school', dat$whereLearn)] <- 'teacher or professor'
 dat$whereLearn[grep('^class$', dat$whereLearn)] <- 'teacher or professor'
 dat$whereLearn[grep('learning how to learn', dat$whereLearn)] <- 'learning how to learn newsletter'
-dat$whereLearn[grep('^book', dat$whereLearn)] <- 'book'
-dat$whereLearn[grep('youtube', dat$whereLearn)] <- 'youtube'
-dat$whereLearn[grep('zhihu', dat$whereLearn)] <- 'zhihu.com'
-dat$whereLearn[grep('netlogo', dat$whereLearn)] <- 'netlogo website'
+dat$whereLearn[grep('^book|some books', dat$whereLearn)] <- 'book'
+dat$whereLearn[grep('youtube|you tube', dat$whereLearn)] <- 'youtube'
+dat$whereLearn[grep('zhihu|知乎', dat$whereLearn)] <- 'zhihu.com'
+dat$whereLearn[grep('netlogo|net logo', dat$whereLearn)] <- 'netlogo website'
 dat$whereLearn[grep('melanie mitchell', dat$whereLearn)] <- 'melanie mitchell'
 dat$whereLearn[grep('newscientist', dat$whereLearn)] <- 'new scientist'
-dat$whereLearn[grep('radiolab', dat$whereLearn)] <- 'radiolab'
+dat$whereLearn[grep('radiolab|radio lab', dat$whereLearn)] <- 'radiolab'
 dat$whereLearn[grep('amazon', dat$whereLearn)] <- 'amazon'
+dat$whereLearn[grep('federico ii', dat$whereLearn)] <- 'university of naples federico ii'
+dat$whereLearn[grep('wiki', dat$whereLearn)] <- 'wikipedia'
+dat$whereLearn[grep('medium', dat$whereLearn)] <- 'medium'
+dat$whereLearn[grep('coursera', dat$whereLearn)] <- 'coursera'
+dat$whereLearn[grep('hindustan', dat$whereLearn)] <- 'hindustan times'
+dat$whereLearn[grep('openculture|open culture', dat$whereLearn)] <- 'openculture.com'
+dat$whereLearn[grep('news paper', dat$whereLearn)] <- 'newspaper'
+dat$whereLearn[grep('quora', dat$whereLearn)] <- 'quora'
+dat$whereLearn[grep('article|text citations|scientific journal|scientific literature|scholarly work|references in journals|referenced in emerald|paper', dat$whereLearn)] <- 'scientific article'
+dat$whereLearn[grep('scientific am.*|scientific an.*|sci.*am', dat$whereLearn)] <- 'scientific american'
+dat$whereLearn[grep('^focus$', dat$whereLearn)] <- 'focus magazine'
+dat$whereLearn[grep("don't", dat$whereLearn)] <- 'blank'
+dat$whereLearn[grep('maybe|not sure|none of the above|n/a', dat$whereLearn)] <- 'blank'
+dat$whereLearn[grep('summercourse|summer school', dat$whereLearn)] <- 'csss'
+dat$whereLearn[grep('sanida', dat$whereLearn)] <- 'sanida'
+dat$whereLearn[grep('sam.*harris', dat$whereLearn)] <- 'sam harris'
+dat$whereLearn[grep('reddit', dat$whereLearn)] <- 'reddit'
+dat$whereLearn[grep('melanie', dat$whereLearn)] <- 'melanie mitchell'
+dat$whereLearn[grep('npr|public radio', dat$whereLearn)] <- 'npr'
+dat$whereLearn[grep('psu', dat$whereLearn)] <- 'psu'
+dat$whereLearn[grep('omsi', dat$whereLearn)] <- 'omsi'
+dat$whereLearn[grep('pdx', dat$whereLearn)] <- 'pdx.edu'
+dat$whereLearn[grep('nautilus|nautil.us', dat$whereLearn)] <- 'nautilus'
+dat$whereLearn[grep('edx', dat$whereLearn)] <- 'edx'
+dat$whereLearn[grep('^dad$|^son|grandson|daughter|family|father|brother|sister', dat$whereLearn)] <- 'family'
+dat$whereLearn[grep('habrahabr.ru', dat$whereLearn)] <- 'habrahabr.ru'
+dat$whereLearn[grepl('email', dat$whereLearn) & 
+                   grepl('sfi|santa fe|complexity explorer|csss', dat$whereLearn)] <- 'email from sfi edu'
+dat$whereLearn[grep('learn.*learn', dat$whereLearn)] <- 'coursera'
+dat$whereLearn[dat$whereLearn == ''] <- 'blank'
 
 
+## sort and organize
 
-foo <- table(dat$whereLearn)
-names(sort(foo, TRUE))[1:100]
+foo <- sort(table(dat$whereLearn), TRUE)
+dat$whereLearn <- factor(dat$whereLearn, levels = names(foo))
+n <- sum(foo >= 5)
+
+whereLearn <- ddply(dat, 'countryName', function(x) {
+    o <- tapply(x$Name, x$whereLearn, function(X) length(unique(X)), default = 0)
+    return(rbind(o[1:n]))
+})
+
+whereLearn$countryName[is.na(whereLearn$countryName)] <- 'blank'
+
+write.csv(whereLearn, file = 'sfi_edu/whereLearn.csv', row.names = FALSE)
+
+row.names(whereLearn) <- whereLearn$countryName
+whereLearn <- as.matrix(whereLearn[, -1])
+whereLearn <- whereLearn[studentsByCountry$countryName, ]
+
+foo <- t(log(whereLearn[nrow(whereLearn) - (99:0), ]))
+
+pdf('sfi_edu/fig_whereLearn.pdf', width = 4, height = 8)
+par(mar = c(1, 3, 3, 1), cex.axis = 0.9)
+image(1:n, 1:ncol(foo), foo, col = rev(viridis(50)), 
+      axes = FALSE, frame.plot = TRUE, xlab = '', ylab = '')
+mtext('Top 100 countries sorted most enrolled to least', side = 2, line = 1)
+mtext('Top 50 ways to hear about complexity explorer\nsorted most to least', side = 3, line = 1)
+dev.off()
