@@ -2,7 +2,7 @@ library(maps)
 library(countrycode)
 library(viridis)
 
-foo <- require(xhxhx)
+foo <- require(socorro)
 if(!foo) {
     foo2 <- require(devtools)
     if(!foo2) install.packages(devtools)
@@ -13,6 +13,7 @@ if(!foo) {
 # make country names just one vector
 dat <- read.csv('~/Desktop/users_country.csv', as.is = TRUE)
 dat <- dat$country
+
 
 # clean up
 dat <- gsub('\\.', '', dat)
@@ -38,6 +39,7 @@ dat[dat == 'España'] <- 'Spain'
 dat[dat == 'Deutschland'] <- 'Germany'
 dat[dat == 'Holland'] <- 'Netherlands'
 dat[dat == 'Argentna'] <- 'Argentina'
+dat[dat == 'CS'] <- 'Serbia'
 dat <- toupper(dat)
 dat[dat == 'US'] <- 'USA'
 
@@ -47,7 +49,7 @@ dat[nchar(dat) == 2 & !is.na(dat)] <-
 
 # change back stupid UK and USA
 dat[grep('United King', dat, ignore.case = TRUE)] <- 'UK'
-dat[grep('United State|U.S.', dat, ignore.case = TRUE)] <- 'USA'
+dat[grep('United State|U\\.S\\.', dat, ignore.case = TRUE)] <- 'USA'
 
 # clean up rest
 dat[grep('China|Hong Kong', dat, ignore.case = TRUE)] <- 'China'
@@ -74,6 +76,7 @@ countryNames <- toupper(gsub(':.*', '', m$names))
 # get counts of students for each country
 x <- table(dat)
 
+
 # match colors to counts
 ncol <- 20
 pal <- viridis(ncol)
@@ -83,15 +86,16 @@ cols <- cols[countryNames]
 cols[is.na(cols)] <- 'gray'
 
 
+
 # make the final map
 pdf('~/Desktop/ce_users_map.pdf', width = 6, height = 3)
 layout(matrix(1:2, nrow = 1), widths = c(6, 1))
 par(mar = rep(0, 4), oma = rep(0, 4))
-map('world', col = cols, fill = TRUE)
+map('world', col = cols, fill = TRUE, lwd = 0.1)
 
 
 # the legend
-par(mar = c(3, 0, 3, 3), mgp = c(2, 0.75, 0))
+par(mar = c(3, 0, 3, 3.25), mgp = c(2, 0.75, 0))
 plot(as.integer(x), xlim = c(0, 1), log = 'y', type = 'n', axes = FALSE, 
      xlab = '', ylab = '')
 
